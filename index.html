@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NSE/BSE Moving Average Signal Radar | 20, 50, 200 SMA</title>
+  <meta name="description" content="Free Indian Stock Market Moving Average Signal Radar for NSE & BSE. Computes 20, 50, and 200-day SMAs with automated Entry and Exit indicators.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <!-- TradingView Lightweight Charts v4.1.3 -->
+  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+<body>
+  <!-- Header / Navigation Bar -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="logo">
+        <span class="logo-radar"><span class="radar-ping"></span></span>
+        <div class="logo-text">
+          <span class="logo-title">NSE/BSE Signal Radar</span>
+          <span class="logo-subtitle">20 · 50 · 200 Moving Average Engine</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search & Exchange Controls -->
+    <div class="header-center">
+      <div class="exchange-toggle" id="exchangeToggle" role="group" aria-label="Exchange Selector">
+        <button type="button" class="btn-toggle active" data-exchange="NSE">NSE</button>
+        <button type="button" class="btn-toggle" data-exchange="BSE">BSE</button>
+      </div>
+
+      <div class="search-box-wrapper" style="position: relative;">
+        <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" id="symbolInput" placeholder="Search 2,300+ Indian stocks (e.g. RELIANCE, ZOMATO, SUZLON)..." autocomplete="off" spellcheck="false" value="RELIANCE">
+        <button type="button" id="searchBtn" class="btn-search">Scan</button>
+        <div class="search-autocomplete hidden" id="searchAutocomplete"></div>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div class="live-status">
+        <span class="status-dot"></span>
+        <span class="status-text">Free yfinance Feed</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Quick Watchlist Pills -->
+  <section class="watchlist-strip">
+    <div class="strip-label">Popular:</div>
+    <div class="watchlist-pills" id="watchlistPills">
+      <button class="pill active" data-sym="RELIANCE">RELIANCE</button>
+      <button class="pill" data-sym="TCS">TCS</button>
+      <button class="pill" data-sym="HDFCBANK">HDFC BANK</button>
+      <button class="pill" data-sym="INFY">INFOSYS</button>
+      <button class="pill" data-sym="TATAMOTORS">TATA MOTORS</button>
+      <button class="pill" data-sym="ICICIBANK">ICICI BANK</button>
+      <button class="pill" data-sym="SBIN">SBI</button>
+      <button class="pill" data-sym="ITC">ITC</button>
+      <button class="pill" data-sym="BHARTIARTL">AIRTEL</button>
+      <button class="pill" data-sym="LT">L&T</button>
+    </div>
+  </section>
+
+  <!-- Main Container -->
+  <main class="app-main">
+    <!-- Active Signal Banner -->
+    <div class="signal-alert-banner" id="signalAlertBanner">
+      <div class="signal-badge" id="signalBadge">
+        <span class="signal-icon" id="signalBadgeIcon">⚡</span>
+        <span class="signal-name" id="signalBadgeTitle">Analyzing Signals...</span>
+      </div>
+      <div class="signal-details" id="signalBadgeDesc">
+        Fetching live historical data and computing 20, 50, and 200 Simple Moving Averages...
+      </div>
+    </div>
+
+    <!-- Ticker Metric Summary Bar -->
+    <section class="ticker-summary-grid">
+      <div class="metric-card">
+        <div class="metric-label">Current Price</div>
+        <div class="metric-value font-mono" id="valPrice">₹0.00</div>
+        <div class="metric-sub font-mono" id="valChange">0.00 (0.00%)</div>
+      </div>
+
+      <div class="metric-card card-sma-20">
+        <div class="metric-label">
+          <span class="sma-dot dot-sma-20"></span>
+          20 SMA (Short)
+        </div>
+        <div class="metric-value font-mono" id="valSma20">₹0.00</div>
+        <div class="metric-sub" id="posSma20">Price vs 20 SMA</div>
+      </div>
+
+      <div class="metric-card card-sma-50">
+        <div class="metric-label">
+          <span class="sma-dot dot-sma-50"></span>
+          50 SMA (Medium)
+        </div>
+        <div class="metric-value font-mono" id="valSma50">₹0.00</div>
+        <div class="metric-sub" id="posSma50">Price vs 50 SMA</div>
+      </div>
+
+      <div class="metric-card card-sma-200">
+        <div class="metric-label">
+          <span class="sma-dot dot-sma-200"></span>
+          200 SMA (Long / Macro)
+        </div>
+        <div class="metric-value font-mono" id="valSma200">₹0.00</div>
+        <div class="metric-sub" id="posSma200">Price vs 200 SMA</div>
+      </div>
+
+      <div class="metric-card card-regime">
+        <div class="metric-label">Trend Alignment</div>
+        <div class="metric-value" id="valRegime">--</div>
+        <div class="metric-sub" id="valRegimeSub">Macro Filter</div>
+      </div>
+    </section>
+
+    <!-- Chart Panel -->
+    <section class="chart-panel">
+      <div class="chart-header">
+        <div class="chart-title-group">
+          <h2 id="chartTickerTitle">RELIANCE.NS · Daily</h2>
+          <span class="badge-timeframe" id="chartExchangeBadge">NSE</span>
+        </div>
+
+        <!-- Legend -->
+        <div class="chart-legend" id="chartLegend">
+          <span class="legend-item"><span class="legend-dot dot-candle"></span> O:<span id="legO">-</span> H:<span id="legH">-</span> L:<span id="legL">-</span> C:<span id="legC">-</span></span>
+          <span class="legend-item"><span class="legend-dot dot-sma-20"></span> SMA 20: <span id="legSma20">-</span></span>
+          <span class="legend-item"><span class="legend-dot dot-sma-50"></span> SMA 50: <span id="legSma50">-</span></span>
+          <span class="legend-item"><span class="legend-dot dot-sma-200"></span> SMA 200: <span id="legSma200">-</span></span>
+        </div>
+
+        <!-- Range Controls -->
+        <div class="chart-controls">
+          <div class="btn-group range-group">
+            <button class="btn-ctrl" data-range="6m">6M</button>
+            <button class="btn-ctrl" data-range="1y">1Y</button>
+            <button class="btn-ctrl active" data-range="2y">2Y</button>
+          </div>
+          <div class="btn-group layer-group">
+            <button class="btn-ctrl active" id="toggleSma20" title="Toggle 20 SMA">20</button>
+            <button class="btn-ctrl active" id="toggleSma50" title="Toggle 50 SMA">50</button>
+            <button class="btn-ctrl active" id="toggleSma200" title="Toggle 200 SMA">200</button>
+            <button class="btn-ctrl active" id="toggleMarkers" title="Toggle Signal Markers">🎯</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chart Canvas Container -->
+      <div class="chart-container" id="chartContainer">
+        <div class="chart-loader" id="chartLoader">
+          <div class="spinner"></div>
+          <p>Loading historical data & computing moving averages...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Navigation Tabs -->
+    <section class="tabs-section">
+      <div class="tabs-header">
+        <button class="tab-btn active" data-tab="bestSetupsTab">
+          <span class="tab-icon">🔥</span> Best 2,000+ Setups (<span id="bestSetupsCount">0</span>)
+        </button>
+        <button class="tab-btn" data-tab="signalsTab">
+          <span class="tab-icon">🎯</span> Chart Signal Log (<span id="signalCount">0</span>)
+        </button>
+        <button class="tab-btn" data-tab="screenerTab">
+          <span class="tab-icon">📊</span> Nifty 50 Screener
+        </button>
+        <button class="tab-btn" data-tab="guideTab">
+          <span class="tab-icon">📖</span> Strategy Guide
+        </button>
+      </div>
+
+      <!-- Tab 0: Best 2,000+ Stocks Scanner Results -->
+      <div class="tab-content active" id="bestSetupsTab">
+        <div class="screener-controls">
+          <div class="screener-filters" id="bestSetupsFilters">
+            <button class="filter-pill active" data-filter="all_top">Top 50 Best Setups</button>
+            <button class="filter-pill" data-filter="golden_crosses">Golden Cross (50/200)</button>
+            <button class="filter-pill" data-filter="swing_breakouts">Momentum Breakout (20/50)</button>
+            <button class="filter-pill" data-filter="pullback_bounces">50 SMA Pullback Bounces</button>
+            <button class="filter-pill" data-filter="power_trends">Power Bull Alignment</button>
+          </div>
+          <div class="scanner-actions" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <button type="button" class="btn-refresh" id="quickScanBtn" title="Scan Top 50 Liquid Stocks in 2.5s">
+              🚀 Quick Scan (50)
+            </button>
+            <button type="button" class="btn-search" id="startLiveScanBtn" style="padding: 6px 14px; font-size: 0.8rem;" title="Run live chunked scan across all 2,300+ NSE stocks">
+              ⚡ Live Scan (2,300+)
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Scan Progress Bar -->
+        <div class="scan-progress-card hidden" id="scanProgressCard" style="margin: 12px 0; padding: 14px; background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 0.85rem;">
+            <span id="scanProgressText" style="color: #00f0ff; font-weight: 600;">Scanning 0 / 2,319 stocks...</span>
+            <span id="scanProgressPercent" class="font-mono" style="color: var(--text-muted);">0%</span>
+          </div>
+          <div style="height: 6px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden;">
+            <div id="scanProgressFill" style="height: 100%; width: 0%; background: linear-gradient(90deg, #00f0ff, #00f59b); transition: width 0.2s ease;"></div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin: 8px 0;">
+          <div class="scanner-meta-status">
+            <span class="status-dot"></span>
+            <span id="scannerMetaTime" style="font-size: 0.8rem; color: var(--text-muted);">Loaded precomputed scan of 2,319 NSE stocks</span>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Symbol</th>
+                <th>Company Name</th>
+                <th>Setup Score</th>
+                <th>Pattern / Trigger</th>
+                <th>Price</th>
+                <th>Day %</th>
+                <th>20 SMA</th>
+                <th>50 SMA</th>
+                <th>200 SMA</th>
+                <th>Dist to 200 SMA</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="bestSetupsTableBody">
+              <tr>
+                <td colspan="12" class="text-center text-muted" style="padding: 24px;">Loading top ranked setups...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 1: Signals History Table -->
+      <div class="tab-content" id="signalsTab">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Signal Type</th>
+                <th>Trigger Event</th>
+                <th>Close Price</th>
+                <th>20 SMA</th>
+                <th>50 SMA</th>
+                <th>200 SMA</th>
+              </tr>
+            </thead>
+            <tbody id="signalsTableBody">
+              <tr>
+                <td colspan="7" class="text-center text-muted">No signals generated yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 2: Nifty 50 Screener -->
+      <div class="tab-content" id="screenerTab">
+        <div class="screener-controls">
+          <div class="screener-filters">
+            <button class="filter-pill active" data-filter="ALL">All Stocks</button>
+            <button class="filter-pill" data-filter="BULLISH">Bullish Trend</button>
+            <button class="filter-pill" data-filter="ENTRY">Active Entry</button>
+            <button class="filter-pill" data-filter="EXIT">Active Exit</button>
+            <button class="filter-pill" data-filter="BEARISH">Bearish / Caution</button>
+          </div>
+          <button class="btn-refresh" id="refreshScreenerBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+            </svg>
+            Refresh Screener
+          </button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table screener-table">
+            <thead>
+              <tr>
+                <th>Symbol</th>
+                <th>Company Name</th>
+                <th>Current Price</th>
+                <th>Change %</th>
+                <th>Regime</th>
+                <th>20 SMA</th>
+                <th>50 SMA</th>
+                <th>200 SMA</th>
+                <th>Latest Signal</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="screenerTableBody">
+              <tr>
+                <td colspan="10" class="text-center text-muted">Click "Refresh Screener" or switch tab to scan top Indian stocks.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 3: Strategy Guide -->
+      <div class="tab-content" id="guideTab">
+        <div class="guide-grid">
+          <div class="guide-card">
+            <div class="guide-header entry-card">
+              <span class="guide-tag entry-tag">ENTRY SIGNALS</span>
+              <h3>How to Enter Trades</h3>
+            </div>
+            <ul class="guide-list">
+              <li>
+                <strong>1. Golden Cross Buy:</strong>
+                <p>When the 50-day SMA crosses above the 200-day SMA. Signals a major institutional bull market cycle.</p>
+              </li>
+              <li>
+                <strong>2. Swing Momentum Buy:</strong>
+                <p>Price is trading above the 200-day SMA, and the 20-day SMA crosses above the 50-day SMA. High-probability swing setup with macro momentum.</p>
+              </li>
+              <li>
+                <strong>3. Pullback Bounce Buy:</strong>
+                <p>In a stacked uptrend (20 > 50 > 200), the price pulls back near the 50-day SMA support and then closes back above the 20-day SMA.</p>
+              </li>
+            </ul>
+          </div>
+
+          <div class="guide-card">
+            <div class="guide-header exit-card">
+              <span class="guide-tag exit-tag">EXIT SIGNALS</span>
+              <h3>How to Protect Capital</h3>
+            </div>
+            <ul class="guide-list">
+              <li>
+                <strong>1. Trailing Momentum Exit:</strong>
+                <p>When closing price breaks below the 20-day SMA. Fast signal used by swing traders to lock in gains.</p>
+              </li>
+              <li>
+                <strong>2. Swing Breakdown Exit:</strong>
+                <p>When the 20-day SMA crosses below the 50-day SMA. Indicates intermediate momentum has reversed.</p>
+              </li>
+              <li>
+                <strong>3. Death Cross / Macro Stop Exit:</strong>
+                <p>When the 50-day SMA crosses below the 200-day SMA or price breaks down under the 200-day SMA. Hard cut to avoid bear markets.</p>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-content">
+      <p>Data provided for educational and analytical purposes via free Yahoo Finance feeds. Not financial advice.</p>
+      <div class="footer-links">
+        <span>InfinityFree PHP Ready</span>
+        <span>•</span>
+        <span>NSE (.NS) / BSE (.BO)</span>
+        <span>•</span>
+        <span>TradingView Lightweight Charts</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
