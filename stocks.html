@@ -150,15 +150,15 @@
 
     <!-- Category Filter Pills -->
     <div class="screener-filters" id="directoryFilters" style="margin-bottom: 16px;">
-      <button class="filter-pill active" data-filter="all">All 2,300+ Stocks (<span id="countTotal">2,319</span>)</button>
-      <button class="filter-pill" data-filter="scored">🔥 Bullish Setups (<span id="countScored">0</span>)</button>
-      <button class="filter-pill" data-filter="golden_crosses">✨ Golden Cross (50/200)</button>
-      <button class="filter-pill" data-filter="swing_breakouts">🚀 Momentum Breakout (20/50)</button>
-      <button class="filter-pill" data-filter="pullback_bounces">🎯 50 SMA Pullback Bounces</button>
-      <button class="filter-pill" data-filter="power_trends">⚡ Power Bull Alignment</button>
-      <button class="filter-pill" data-filter="above_200">🟢 Above 200 SMA</button>
-      <button class="filter-pill" data-filter="below_200">🔴 Below 200 SMA</button>
-      <button class="filter-pill" data-filter="tier_a">Tier A+ Only</button>
+      <button class="filter-pill active" data-filter="all">All Stocks (<span id="countTotal">2,319</span>)</button>
+      <button class="filter-pill" data-filter="scored">🔥 ENT Setups (<span id="countScored">0</span>)</button>
+      <button class="filter-pill" data-filter="golden_crosses">✨ Golden Cross</button>
+      <button class="filter-pill" data-filter="swing_breakouts">🚀 Momentum</button>
+      <button class="filter-pill" data-filter="pullback_bounces">🎯 50 SMA Bounce</button>
+      <button class="filter-pill" data-filter="power_trends">⚡ Bull Trend</button>
+      <button class="filter-pill" data-filter="above_200">🟢 >200 SMA</button>
+      <button class="filter-pill" data-filter="below_200">🔴 &lt;200 SMA</button>
+      <button class="filter-pill" data-filter="tier_a">Tier A+</button>
     </div>
 
     <!-- Data Table Container -->
@@ -337,6 +337,46 @@
     }
 
     /**
+     * Convert timestamp to Indian Standard Time (IST)
+     */
+    function formatIST(str) {
+      if (!str) return '';
+      if (typeof str === 'string' && str.includes('IST')) return str;
+      if (typeof str === 'string' && str.includes('UTC')) {
+        try {
+          const iso = str.replace(' UTC', 'Z').replace(' ', 'T');
+          const d = new Date(iso);
+          if (!isNaN(d.getTime())) {
+            return d.toLocaleString('en-IN', {
+              timeZone: 'Asia/Kolkata',
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true
+            }) + ' IST';
+          }
+        } catch (e) {}
+      }
+      try {
+        const d = new Date(str);
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleString('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+          }) + ' IST';
+        }
+      } catch (e) {}
+      return str;
+    }
+
+    /**
      * Merge 2,300+ Stocks with Scored Analysis
      */
     function processData(masterList, scoredData) {
@@ -377,7 +417,7 @@
       if (DIR_DOM.countScored) DIR_DOM.countScored.textContent = allScored.length;
 
       if (scoredData && scoredData.generatedAt && DIR_DOM.headerStatus) {
-        DIR_DOM.headerStatus.textContent = `Scanned ${scoredData.generatedAt.slice(0, 16)}`;
+        DIR_DOM.headerStatus.textContent = `Scanned ${formatIST(scoredData.generatedAt)}`;
       }
 
       // Merge master stocks with scored setups
@@ -499,12 +539,32 @@
         else if (item.tier === 'B') scoreBadgeClass = 'tier-b';
 
         let badgeTypeClass = 'badge-signal-entry';
-        if (item.setupType === 'BELOW_200_SMA' || item.setupType === 'BEARISH_ALIGNMENT') {
-          badgeTypeClass = 'badge-bearish';
+        let shortBadgeText = '▲ ENT · ' + (item.badgeLabel || 'Trigger');
+
+        if (item.setupType === 'GOLDEN_CROSS') {
+          badgeTypeClass = 'badge-signal-entry';
+          shortBadgeText = '▲ ENT · Golden Cross';
+        } else if (item.setupType === 'SWING_BREAKOUT') {
+          badgeTypeClass = 'badge-signal-entry';
+          shortBadgeText = '▲ ENT · Momentum';
+        } else if (item.setupType === 'PULLBACK_BOUNCE') {
+          badgeTypeClass = 'badge-signal-entry';
+          shortBadgeText = '▲ ENT · 50 SMA Bounce';
+        } else if (item.setupType === 'POWER_TREND') {
+          badgeTypeClass = 'badge-signal-entry';
+          shortBadgeText = '▲ ENT · Bull Trend';
         } else if (item.setupType === 'EARLY_ACCUMULATION') {
           badgeTypeClass = 'badge-early';
+          shortBadgeText = '▲ ENT · 200 Reclaim';
+        } else if (item.setupType === 'BELOW_200_SMA') {
+          badgeTypeClass = 'badge-bearish';
+          shortBadgeText = '▼ EXT · Below 200';
+        } else if (item.setupType === 'BEARISH_ALIGNMENT') {
+          badgeTypeClass = 'badge-bearish';
+          shortBadgeText = '▼ EXT · Bear Trend';
         } else if (item.setupType === 'NEUTRAL') {
           badgeTypeClass = 'badge-neutral';
+          shortBadgeText = '— Neutral';
         }
 
         const priceFormatted = (item.price !== null && item.price !== undefined)
@@ -544,8 +604,8 @@
               ` : `<span class="badge-score tier-neutral">--</span>`}
             </td>
             <td>
-              <span class="${badgeTypeClass}">
-                ${item.badgeLabel || 'Neutral'}
+              <span class="${badgeTypeClass}" style="white-space: nowrap; font-size: 0.74rem; font-weight: 600;">
+                ${shortBadgeText}
               </span>
             </td>
             <td class="font-mono" style="font-weight: 600;">${priceFormatted}</td>

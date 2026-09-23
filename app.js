@@ -498,7 +498,7 @@ function renderDashboard(data) {
   if (STATE.showSma50) STATE.sma50Series.setData(data.sma50);
   if (STATE.showSma200) STATE.sma200Series.setData(data.sma200);
 
-  // Create Markers for Signals
+  // Create Markers for Signals (Compact & Clean: ENT / EXT)
   const markers = [];
   data.signals.forEach(sig => {
     const isEntry = sig.type === 'ENTRY';
@@ -507,7 +507,7 @@ function renderDashboard(data) {
       position: isEntry ? 'belowBar' : 'aboveBar',
       color: isEntry ? '#10b981' : '#ef4444',
       shape: isEntry ? 'arrowUp' : 'arrowDown',
-      text: `${sig.title} @ ₹${sig.price}`
+      text: isEntry ? 'ENT' : 'EXT'
     });
   });
 
@@ -558,7 +558,7 @@ function renderSignalBanner(lastSignal, sum) {
   const isEntry = lastSignal.type === 'ENTRY';
   banner.classList.add(isEntry ? 'state-entry' : 'state-exit');
   DOM.signalBadgeIcon.textContent = isEntry ? '🟢' : '🔴';
-  DOM.signalBadgeTitle.textContent = `ACTIVE ${lastSignal.title.toUpperCase()} (${lastSignal.time})`;
+  DOM.signalBadgeTitle.textContent = `${isEntry ? 'ENT' : 'EXT'} · ${lastSignal.title} (${lastSignal.time})`;
   DOM.signalBadgeDesc.textContent = `${lastSignal.description} at price ₹${lastSignal.price.toFixed(2)}. ${isEntry ? 'Favorable risk/reward for swing positioning.' : 'Caution advised, protect capital.'}`;
 }
 
@@ -591,8 +591,8 @@ function renderSignalsTable(signals) {
       <tr>
         <td class="font-mono">${s.time}</td>
         <td>
-          <span class="${isEntry ? 'badge-signal-entry' : 'badge-signal-exit'}">
-            ${isEntry ? '▲ ENTRY' : '▼ EXIT'}
+          <span class="${isEntry ? 'badge-signal-entry' : 'badge-signal-exit'}" style="font-weight: 700; padding: 3px 8px;">
+            ${isEntry ? '▲ ENT' : '▼ EXT'}
           </span>
         </td>
         <td><strong>${s.title}</strong><br><small class="text-muted">${s.description}</small></td>
@@ -680,10 +680,10 @@ function renderScreenerTable(items, filter) {
         <td class="font-mono" style="color: var(--color-sma200);">${row.sma200 ? '₹' + row.sma200.toFixed(2) : '-'}</td>
         <td>
           ${row.lastSignal ? `
-            <span class="${isEntry ? 'badge-signal-entry' : 'badge-signal-exit'}">
-              ${isEntry ? '▲ ' : '▼ '}${row.lastSignal.title}
+            <span class="${isEntry ? 'badge-signal-entry' : 'badge-signal-exit'}" style="font-size: 0.72rem; padding: 2px 7px; font-weight: 700;">
+              ${isEntry ? '▲ ENT' : '▼ EXT'}
             </span>
-          ` : '<span class="text-muted">None</span>'}
+          ` : '<span class="text-muted">—</span>'}
         </td>
         <td>
           <button class="btn-view-stock" onclick="switchStock('${row.symbol}')">View Chart</button>
@@ -852,6 +852,46 @@ function selectAutocompleteItem(sym) {
 }
 
 /**
+ * Convert timestamp to Indian Standard Time (IST)
+ */
+function formatIST(str) {
+  if (!str) return '';
+  if (typeof str === 'string' && str.includes('IST')) return str;
+  if (typeof str === 'string' && str.includes('UTC')) {
+    try {
+      const iso = str.replace(' UTC', 'Z').replace(' ', 'T');
+      const d = new Date(iso);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleString('en-IN', {
+          timeZone: 'Asia/Kolkata',
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        }) + ' IST';
+      }
+    } catch (e) {}
+  }
+  try {
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleString('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      }) + ' IST';
+    }
+  } catch (e) {}
+  return str;
+}
+
+/**
  * Load Precomputed 2,000+ Stock Scanner Results
  * Uses Stale-While-Revalidate: renders immediately from localStorage in 0ms,
  * then background checks for newer scans.
@@ -865,7 +905,7 @@ async function loadScannerResults(category = 'all_top') {
       if (cached && cached.categories) {
         STATE.scannerData = cached;
         if (cached.generatedAt && DOM.scannerMetaTime) {
-          DOM.scannerMetaTime.textContent = `Scanned ${cached.totalScanned || 2300}+ stocks (${cached.generatedAt}) · Instant Cache`;
+          DOM.scannerMetaTime.textContent = `Scanned ${cached.totalScanned || 2300}+ stocks (${formatIST(cached.generatedAt)})`;
         }
         renderBestSetupsTable(category);
       }
@@ -920,7 +960,7 @@ async function loadScannerResults(category = 'all_top') {
     } catch (e) {}
 
     if (payload.generatedAt && DOM.scannerMetaTime) {
-      DOM.scannerMetaTime.textContent = `Scanned ${payload.totalScanned || 2300}+ stocks (${payload.generatedAt})`;
+      DOM.scannerMetaTime.textContent = `Scanned ${payload.totalScanned || 2300}+ stocks (${formatIST(payload.generatedAt)})`;
     }
 
     if (isNewer || !cached) {
@@ -969,8 +1009,8 @@ function renderBestSetupsTable(category = 'all_top') {
           </span>
         </td>
         <td>
-          <span class="badge-signal-entry">
-            ▲ ${row.badgeLabel || row.setupType}
+          <span class="badge-signal-entry" style="font-size: 0.74rem; font-weight: 700; white-space: nowrap;">
+            ▲ ENT · ${(row.badgeLabel || row.setupType).replace(/^(ENT\s*[·:]*|▲\s*)/, '').trim()}
           </span>
         </td>
         <td class="font-mono">₹${row.price ? row.price.toFixed(2) : '-'}</td>

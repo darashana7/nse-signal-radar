@@ -15,7 +15,7 @@ import json
 import time
 import argparse
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import urllib.request
 import numpy as np
 import aiohttp
@@ -157,39 +157,40 @@ def compute_setup(data, sym, name):
 
             # Setup 1: Golden Cross
             if recent_golden and c_curr > s200_curr:
-                score, setup_type, badge = 98, "GOLDEN_CROSS", "Golden Cross (50/200)"
-                desc = "50-day SMA crossed above 200-day SMA (Major Institutional Bull Cycle)"
+                score, setup_type, badge = 98, "GOLDEN_CROSS", "ENT · Golden Cross"
+                desc = "50 SMA crossed above 200 SMA"
 
             # Setup 2: Swing Momentum Breakout
             elif recent_swing and c_curr > s200_curr:
-                score, setup_type, badge = 93, "SWING_BREAKOUT", "Momentum Breakout (20/50)"
-                desc = "20-day SMA crossed above 50-day SMA with macro confirmation"
+                score, setup_type, badge = 93, "SWING_BREAKOUT", "ENT · Momentum"
+                desc = "20 SMA crossed above 50 SMA"
 
             # Setup 3: 50 SMA Pullback Bounce
             elif s20_curr > s50_curr > s200_curr and c_curr > s20_curr and (lows_raw and len(lows_raw) > 1 and lows_raw[-2] is not None and lows_raw[-2] <= s50_curr * 1.015):
-                score, setup_type, badge = 88, "PULLBACK_BOUNCE", "50 SMA Pullback Bounce"
-                desc = "Tested 50-day SMA support in strong uptrend and closed above 20 SMA"
+                score, setup_type, badge = 88, "PULLBACK_BOUNCE", "ENT · 50 SMA Bounce"
+                desc = "Bounced off 50 SMA support"
 
             # Setup 4: Power Trend Bull Alignment
             elif c_curr > s20_curr > s50_curr > s200_curr:
                 score = 82 if (dist_20 and 2.0 <= dist_20 <= 12.0) else 78
-                setup_type, badge = "POWER_TREND", "Bull Alignment (20>50>200)"
-                desc = "Sustained bullish alignment across 20, 50, and 200 SMAs"
+                setup_type, badge = "POWER_TREND", "ENT · Bull Trend"
+                desc = "Bull alignment (20>50>200)"
 
             # Setup 5: Early Accumulation Reclaim
             elif c_curr > s200_curr and s20_curr > s50_curr and s50_curr <= s200_curr:
-                score, setup_type, badge = 70, "EARLY_ACCUMULATION", "200 SMA Base Reclaim"
-                desc = "Price reclaimed 200-day SMA with short-term trend curling up"
+                score, setup_type, badge = 70, "EARLY_ACCUMULATION", "ENT · 200 Reclaim"
+                desc = "Reclaimed 200 SMA base"
 
             elif c_curr < s200_curr and s20_curr < s50_curr < s200_curr:
-                setup_type, badge = "BEARISH_ALIGNMENT", "Bear Alignment (20<50<200)"
-                desc = "Sustained bearish alignment below 20, 50, and 200 SMAs"
+                setup_type, badge = "BEARISH_ALIGNMENT", "EXT · Bear Trend"
+                desc = "Bear alignment (20<50<200)"
 
             elif c_curr < s200_curr:
-                setup_type, badge = "BELOW_200_SMA", "Below 200 SMA (Macro Downtrend)"
-                desc = "Trading below macro 200-day moving average"
+                setup_type, badge = "BELOW_200_SMA", "EXT · Below 200"
+                desc = "Below 200 SMA"
 
         tier = "A+" if score >= 90 else ("A" if score >= 75 else ("B" if score >= 60 else "NEUTRAL"))
+        sig_code = "ENT" if score > 0 else ("EXT" if ("BELOW" in setup_type or "BEARISH" in setup_type) else "NONE")
 
         return {
             "symbol": sym,
@@ -206,6 +207,7 @@ def compute_setup(data, sym, name):
             "volume": vol_curr,
             "score": score,
             "tier": tier,
+            "signal": sig_code,
             "setupType": setup_type,
             "badgeLabel": badge,
             "description": desc,
@@ -255,8 +257,11 @@ async def run_async_scan(stocks, concurrency=45):
     print(f"\nScan completed in {elapsed}s! Processed {len(stocks)} stocks ({rate} stocks/sec).")
     print(f"Total analyzed stocks: {len(results)}. Discovered {len(scored_setups)} high-probability setups.")
 
+    ist_zone = timezone(timedelta(hours=5, minutes=30))
+    ist_time_str = datetime.now(ist_zone).strftime("%Y-%m-%d %I:%M %p IST")
+
     payload = {
-        "generatedAt": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
+        "generatedAt": ist_time_str,
         "totalScanned": len(stocks),
         "totalSetupsFound": len(scored_setups),
         "executionSeconds": elapsed,
