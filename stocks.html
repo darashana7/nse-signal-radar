@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>All 2,300+ NSE Stocks Directory & Screener | NSE/BSE Signal Radar</title>
+  <meta name="description" content="Explore all 2,300+ active NSE equities with 20, 50, 200 Moving Average signals, Golden Crosses, and ranked technical setups.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .export-btn {
+      background: rgba(0, 240, 255, 0.1);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      color: var(--color-sma20);
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .export-btn:hover {
+      background: var(--color-sma20);
+      color: #07090e;
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+    }
+    .tier-neutral {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-dim);
+    }
+  </style>
+</head>
+<body>
+  <!-- Top Navigation Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="radar-logo-pulse"></div>
+      <div class="brand-text">
+        <h1 class="brand-title">NSE/BSE Signal Radar</h1>
+        <p class="brand-subtitle">Master 2,300+ Equities Screener · 20, 50, 200 SMA</p>
+      </div>
+    </div>
+
+    <div class="header-right" style="display: flex; gap: 12px; align-items: center;">
+      <nav class="main-nav" style="display: flex; gap: 8px;">
+        <a href="index.html" class="nav-btn">📈 Chart Radar</a>
+        <a href="stocks.html" class="nav-btn active">🔥 All 2,300+ Stocks</a>
+      </nav>
+      <div class="live-status">
+        <span class="status-dot"></span>
+        <span class="status-text" id="headerStatusText">Daily Cloud Scan</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main" style="max-width: 1400px; margin: 0 auto; padding: 20px;">
+    <!-- Top Summary Metrics Banner -->
+    <section class="stats-banner">
+      <div class="stat-box highlight-cyan">
+        <span class="stat-box-label">Tracked Universe</span>
+        <span class="stat-box-num" id="statTotalStocks">2,319</span>
+        <span class="stat-box-sub">Active NSE Equities</span>
+      </div>
+      <div class="stat-box highlight-green">
+        <span class="stat-box-label">Golden Cross (50/200)</span>
+        <span class="stat-box-num font-mono" id="statGoldenCrosses" style="color: var(--color-bullish);">--</span>
+        <span class="stat-box-sub">Major Bull Cycles</span>
+      </div>
+      <div class="stat-box highlight-yellow">
+        <span class="stat-box-label">Momentum Breakouts (20/50)</span>
+        <span class="stat-box-num font-mono" id="statSwingBreakouts" style="color: var(--color-sma50);">--</span>
+        <span class="stat-box-sub">Fresh Swing Triggers</span>
+      </div>
+      <div class="stat-box highlight-magenta">
+        <span class="stat-box-label">50 SMA Pullback Bounces</span>
+        <span class="stat-box-num font-mono" id="statPullbackBounces" style="color: var(--color-sma200);">--</span>
+        <span class="stat-box-sub">Trend Continuation</span>
+      </div>
+    </section>
+
+    <!-- Interactive Filters & Search Bar -->
+    <section class="directory-controls">
+      <div style="display: flex; gap: 10px; align-items: center; flex: 1; min-width: 260px; max-width: 450px;">
+        <div class="search-box-wrapper" style="position: relative; width: 100%;">
+          <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 14px; top: 12px; color: var(--text-dim);">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="directorySearchInput" placeholder="Filter 2,300+ stocks by symbol or company name..." style="width: 100%; padding-left: 40px;" autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Sort By:</span>
+          <select id="sortSelect" class="select-per-page">
+            <option value="score_desc">Setup Score (High to Low)</option>
+            <option value="change_desc">Day % Gainers (High to Low)</option>
+            <option value="change_asc">Day % Losers (Low to High)</option>
+            <option value="price_desc">Price (High to Low)</option>
+            <option value="price_asc">Price (Low to High)</option>
+            <option value="symbol_asc">Symbol Name (A to Z)</option>
+          </select>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Show:</span>
+          <select id="perPageSelect" class="select-per-page">
+            <option value="25">25 per page</option>
+            <option value="50" selected>50 per page</option>
+            <option value="100">100 per page</option>
+          </select>
+        </div>
+
+        <button type="button" id="exportCsvBtn" class="export-btn" title="Download visible stocks to CSV">
+          📥 Export CSV
+        </button>
+      </div>
+    </section>
+
+    <!-- Category Filter Pills -->
+    <div class="screener-filters" id="directoryFilters" style="margin-bottom: 16px;">
+      <button class="filter-pill active" data-filter="all">All 2,300+ Stocks</button>
+      <button class="filter-pill" data-filter="scored">🔥 Top Scored Setups (<span id="countScored">0</span>)</button>
+      <button class="filter-pill" data-filter="golden_crosses">✨ Golden Cross (50/200)</button>
+      <button class="filter-pill" data-filter="swing_breakouts">🚀 Momentum Breakout (20/50)</button>
+      <button class="filter-pill" data-filter="pullback_bounces">🎯 50 SMA Pullback Bounces</button>
+      <button class="filter-pill" data-filter="power_trends">⚡ Power Bull Alignment</button>
+      <button class="filter-pill" data-filter="tier_a">Tier A+ Only</button>
+    </div>
+
+    <!-- Data Table Container -->
+    <div class="tabs-section">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 50px;">#</th>
+              <th>Symbol</th>
+              <th>Company Name</th>
+              <th>Setup Score</th>
+              <th>Signal Pattern</th>
+              <th>Price</th>
+              <th>Day %</th>
+              <th>20 SMA</th>
+              <th>50 SMA</th>
+              <th>200 SMA</th>
+              <th>Dist to 200 SMA</th>
+              <th style="text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="directoryTableBody">
+            <tr>
+              <td colspan="12" class="text-center text-muted" style="padding: 40px; text-align: center;">
+                <div class="spinner" style="margin: 0 auto 12px auto;"></div>
+                Loading master list of 2,300+ stocks...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Bar -->
+      <div class="pagination-bar" id="paginationBar">
+        <span class="page-indicator" id="paginationInfo">Showing 0 to 0 of 0 stocks</span>
+        <div class="pagination-controls">
+          <button type="button" class="btn-page" id="btnFirstPage" title="First Page">« First</button>
+          <button type="button" class="btn-page" id="btnPrevPage">‹ Prev</button>
+          <span class="page-indicator" id="currentPageDisplay">Page 1 of 1</span>
+          <button type="button" class="btn-page" id="btnNextPage">Next ›</button>
+          <button type="button" class="btn-page" id="btnLastPage" title="Last Page">Last »</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="app-footer" style="max-width: 1400px; margin: 30px auto 20px auto; padding: 0 20px; text-align: center; color: var(--text-dim); font-size: 0.75rem;">
+    NSE/BSE Signal Radar · Automated Daily Scanner at 16:30 IST · Free Historical Market Data via yfinance
+  </footer>
+
+  <script>
+    /**
+     * Master 2,300+ Stocks Controller
+     */
+    const DIR_STATE = {
+      masterStocks: [],
+      scoredMap: {},
+      allMerged: [],
+      filtered: [],
+      currentPage: 1,
+      perPage: 50,
+      activeFilter: 'all',
+      searchQuery: '',
+      sortField: 'score_desc'
+    };
+
+    const DIR_DOM = {
+      tbody: document.getElementById('directoryTableBody'),
+      searchInput: document.getElementById('directorySearchInput'),
+      sortSelect: document.getElementById('sortSelect'),
+      perPageSelect: document.getElementById('perPageSelect'),
+      exportBtn: document.getElementById('exportCsvBtn'),
+      filters: document.getElementById('directoryFilters'),
+      paginationInfo: document.getElementById('paginationInfo'),
+      currentPageDisplay: document.getElementById('currentPageDisplay'),
+      btnFirst: document.getElementById('btnFirstPage'),
+      btnPrev: document.getElementById('btnPrevPage'),
+      btnNext: document.getElementById('btnNextPage'),
+      btnLast: document.getElementById('btnLastPage'),
+      statTotal: document.getElementById('statTotalStocks'),
+      statGolden: document.getElementById('statGoldenCrosses'),
+      statSwing: document.getElementById('statSwingBreakouts'),
+      statPullback: document.getElementById('statPullbackBounces'),
+      countScored: document.getElementById('countScored'),
+      headerStatus: document.getElementById('headerStatusText')
+    };
+
+    /**
+     * Bootstrap & Load Data via Stale-While-Revalidate
+     */
+    async function initDirectory() {
+      // 1. Try reading from instant browser cache
+      try {
+        const cachedMaster = localStorage.getItem('cached_stocks_master');
+        const cachedScored = localStorage.getItem('cached_scanner_results');
+        if (cachedMaster && cachedScored) {
+          const masterList = JSON.parse(cachedMaster);
+          const scoredPayload = JSON.parse(cachedScored);
+          if (masterList.length && scoredPayload.categories) {
+            processData(masterList, scoredPayload);
+          }
+        }
+      } catch (e) {}
+
+      // 2. Fetch fresh data concurrently
+      try {
+        const [masterRes, scoredRes] = await Promise.all([
+          fetchMasterStocks(),
+          fetchScoredSetups()
+        ]);
+
+        if (masterRes && masterRes.length && scoredRes) {
+          processData(masterRes, scoredRes);
+        }
+      } catch (err) {
+        console.error('Directory init error:', err);
+      }
+    }
+
+    async function fetchMasterStocks() {
+      // Try local api.php -> static file -> jsDelivr CDN
+      let list = null;
+      try {
+        const res = await fetch('api.php?action=symbols');
+        if (res.ok) list = await res.json();
+      } catch (e) {}
+
+      if (!list || !list.length) {
+        try {
+          const res2 = await fetch('stocks_master.json');
+          if (res2.ok) list = await res2.json();
+        } catch (e) {}
+      }
+
+      if (!list || !list.length) {
+        try {
+          const res3 = await fetch('https://cdn.jsdelivr.net/gh/darashana7/nse-signal-radar@main/stocks_master.json');
+          if (res3.ok) list = await res3.json();
+        } catch (e) {}
+      }
+
+      if (list && list.length) {
+        try { localStorage.setItem('cached_stocks_master', JSON.stringify(list)); } catch (e) {}
+      }
+      return list || [];
+    }
+
+    async function fetchScoredSetups() {
+      let data = null;
+      try {
+        const res = await fetch('api.php?action=scan_results');
+        if (res.ok) data = await res.json();
+      } catch (e) {}
+
+      if (!data || !data.categories) {
+        try {
+          const res2 = await fetch('scanner_results.json');
+          if (res2.ok) data = await res2.json();
+        } catch (e) {}
+      }
+
+      if (!data || !data.categories) {
+        try {
+          const res3 = await fetch('https://cdn.jsdelivr.net/gh/darashana7/nse-signal-radar@main/scanner_results.json');
+          if (res3.ok) data = await res3.json();
+        } catch (e) {}
+      }
+
+      if (data && data.categories) {
+        try { localStorage.setItem('cached_scanner_results', JSON.stringify(data)); } catch (e) {}
+      }
+      return data;
+    }
+
+    /**
+     * Merge 2,300+ Stocks with Scored Analysis
+     */
+    function processData(masterList, scoredData) {
+      DIR_STATE.masterStocks = masterList;
+      DIR_STATE.scoredMap = {};
+
+      // Build scored map
+      const cats = (scoredData && scoredData.categories) ? scoredData.categories : {};
+      const allScored = cats.all_top || [];
+      allScored.forEach(item => {
+        DIR_STATE.scoredMap[item.symbol] = item;
+      });
+
+      // Update stat cards
+      const goldenCount = (cats.golden_crosses || []).length;
+      const swingCount = (cats.swing_breakouts || []).length;
+      const pullbackCount = (cats.pullback_bounces || []).length;
+
+      DIR_DOM.statTotal.textContent = masterList.length.toLocaleString();
+      DIR_DOM.statGolden.textContent = goldenCount;
+      DIR_DOM.statSwing.textContent = swingCount;
+      DIR_DOM.statPullback.textContent = pullbackCount;
+      DIR_DOM.countScored.textContent = allScored.length;
+
+      if (scoredData && scoredData.generatedAt) {
+        DIR_DOM.headerStatus.textContent = `Scanned ${scoredData.generatedAt.slice(0, 16)}`;
+      }
+
+      // Merge master stocks with scored setups
+      DIR_STATE.allMerged = masterList.map(stock => {
+        const scored = DIR_STATE.scoredMap[stock.s];
+        if (scored) {
+          return {
+            ...scored,
+            isScored: true
+          };
+        }
+        return {
+          symbol: stock.s,
+          name: stock.n,
+          score: 0,
+          tier: 'NEUTRAL',
+          setupType: 'NEUTRAL',
+          badgeLabel: 'Neutral / Untriggered',
+          price: null,
+          changePercent: null,
+          sma20: null,
+          sma50: null,
+          sma200: null,
+          dist200Pct: null,
+          isScored: false
+        };
+      });
+
+      applyFiltersAndSort();
+    }
+
+    /**
+     * Filter & Sort In Memory
+     */
+    function applyFiltersAndSort() {
+      const q = DIR_STATE.searchQuery.trim().toUpperCase();
+      const filter = DIR_STATE.activeFilter;
+
+      let list = DIR_STATE.allMerged;
+
+      // 1. Category Filter
+      if (filter === 'scored') {
+        list = list.filter(x => x.isScored);
+      } else if (filter === 'golden_crosses') {
+        list = list.filter(x => x.setupType === 'GOLDEN_CROSS');
+      } else if (filter === 'swing_breakouts') {
+        list = list.filter(x => x.setupType === 'SWING_BREAKOUT');
+      } else if (filter === 'pullback_bounces') {
+        list = list.filter(x => x.setupType === 'PULLBACK_BOUNCE');
+      } else if (filter === 'power_trends') {
+        list = list.filter(x => x.setupType === 'POWER_TREND');
+      } else if (filter === 'tier_a') {
+        list = list.filter(x => x.tier === 'A+');
+      }
+
+      // 2. Search Query Filter
+      if (q) {
+        list = list.filter(x => x.symbol.includes(q) || (x.name && x.name.toUpperCase().includes(q)));
+      }
+
+      // 3. Sorting
+      const sort = DIR_STATE.sortField;
+      list.sort((a, b) => {
+        if (sort === 'score_desc') return (b.score || 0) - (a.score || 0);
+        if (sort === 'change_desc') return (b.changePercent || -999) - (a.changePercent || -999);
+        if (sort === 'change_asc') return (a.changePercent || 999) - (b.changePercent || 999);
+        if (sort === 'price_desc') return (b.price || 0) - (a.price || 0);
+        if (sort === 'price_asc') return (a.price || 0) - (b.price || 0);
+        if (sort === 'symbol_asc') return a.symbol.localeCompare(b.symbol);
+        return 0;
+      });
+
+      DIR_STATE.filtered = list;
+      DIR_STATE.currentPage = 1;
+      renderTable();
+    }
+
+    /**
+     * Render Active Page
+     */
+    function renderTable() {
+      const total = DIR_STATE.filtered.length;
+      const perPage = DIR_STATE.perPage;
+      const maxPages = Math.max(1, Math.ceil(total / perPage));
+
+      if (DIR_STATE.currentPage > maxPages) DIR_STATE.currentPage = maxPages;
+      if (DIR_STATE.currentPage < 1) DIR_STATE.currentPage = 1;
+
+      const page = DIR_STATE.currentPage;
+      const startIdx = (page - 1) * perPage;
+      const endIdx = Math.min(total, startIdx + perPage);
+
+      const pageItems = DIR_STATE.filtered.slice(startIdx, endIdx);
+
+      // Update Pagination info
+      DIR_DOM.paginationInfo.textContent = `Showing ${total > 0 ? (startIdx + 1).toLocaleString() : 0} to ${endIdx.toLocaleString()} of ${total.toLocaleString()} stocks`;
+      DIR_DOM.currentPageDisplay.textContent = `Page ${page} of ${maxPages}`;
+      DIR_DOM.btnFirst.disabled = (page <= 1);
+      DIR_DOM.btnPrev.disabled = (page <= 1);
+      DIR_DOM.btnNext.disabled = (page >= maxPages);
+      DIR_DOM.btnLast.disabled = (page >= maxPages);
+
+      if (!pageItems.length) {
+        DIR_DOM.tbody.innerHTML = `<tr><td colspan="12" class="text-center text-muted" style="padding: 30px; text-align: center;">No stocks found matching the criteria.</td></tr>`;
+        return;
+      }
+
+      DIR_DOM.tbody.innerHTML = pageItems.map((item, idx) => {
+        const globalRank = startIdx + idx + 1;
+        let scoreBadgeClass = 'tier-neutral';
+        if (item.tier === 'A+') scoreBadgeClass = 'tier-aplus';
+        else if (item.tier === 'A') scoreBadgeClass = 'tier-a';
+        else if (item.tier === 'B') scoreBadgeClass = 'tier-b';
+
+        let badgeTypeClass = 'badge-signal-entry';
+        if (item.setupType === 'NEUTRAL') badgeTypeClass = 'tier-neutral';
+
+        const dayChangeFormatted = item.changePercent !== null 
+          ? `<span class="${item.changePercent >= 0 ? 'val-positive' : 'val-negative'}">${item.changePercent >= 0 ? '+' : ''}${item.changePercent}%</span>`
+          : '<span class="text-muted">-</span>';
+
+        const dist200Formatted = item.dist200Pct !== null
+          ? `<span class="${item.dist200Pct >= 0 ? 'val-positive' : 'val-negative'}">${item.dist200Pct >= 0 ? '+' : ''}${item.dist200Pct}%</span>`
+          : '<span class="text-muted">-</span>';
+
+        return `
+          <tr>
+            <td class="font-mono text-muted" style="font-size: 0.75rem;">${globalRank}</td>
+            <td class="col-symbol">
+              <a href="index.html?symbol=${encodeURIComponent(item.symbol)}" style="color: var(--color-sma20); text-decoration: none; font-weight: 700;">
+                ${item.symbol}
+              </a>
+            </td>
+            <td style="max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${item.name || ''}">
+              ${item.name || item.symbol}
+            </td>
+            <td>
+              ${item.score > 0 ? `
+                <div class="badge-score ${scoreBadgeClass}">
+                  <span class="score-star">★</span>
+                  <span>${item.score}</span>
+                  <span class="score-tier">${item.tier}</span>
+                </div>
+              ` : `<span class="badge-score tier-neutral">--</span>`}
+            </td>
+            <td>
+              <span class="${badgeTypeClass}" style="font-size: 0.72rem; padding: 3px 8px;">
+                ${item.badgeLabel || 'Neutral'}
+              </span>
+            </td>
+            <td class="font-mono" style="font-weight: 600;">
+              ${item.price ? '₹' + item.price.toLocaleString('en-IN') : '<span class="text-muted">-</span>'}
+            </td>
+            <td class="font-mono">${dayChangeFormatted}</td>
+            <td class="font-mono" style="color: var(--color-sma20);">${item.sma20 ? '₹' + item.sma20 : '-'}</td>
+            <td class="font-mono" style="color: var(--color-sma50);">${item.sma50 ? '₹' + item.sma50 : '-'}</td>
+            <td class="font-mono" style="color: var(--color-sma200);">${item.sma200 ? '₹' + item.sma200 : '-'}</td>
+            <td class="font-mono">${dist200Formatted}</td>
+            <td style="text-align: right;">
+              <a href="index.html?symbol=${encodeURIComponent(item.symbol)}" class="btn-view-stock" style="text-decoration: none; display: inline-block;">
+                View Chart
+              </a>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    /**
+     * CSV Export Feature
+     */
+    function exportToCsv() {
+      if (!DIR_STATE.filtered.length) return;
+      const headers = ['Rank', 'Symbol', 'Name', 'Score', 'Tier', 'Pattern', 'Price', 'DayChangePercent', 'SMA20', 'SMA50', 'SMA200', 'Dist200Percent'];
+      const rows = DIR_STATE.filtered.map((item, idx) => [
+        idx + 1,
+        item.symbol,
+        `"${(item.name || '').replace(/"/g, '""')}"`,
+        item.score || '',
+        item.tier || '',
+        `"${(item.badgeLabel || '').replace(/"/g, '""')}"`,
+        item.price || '',
+        item.changePercent || '',
+        item.sma20 || '',
+        item.sma50 || '',
+        item.sma200 || '',
+        item.dist200Pct || ''
+      ]);
+
+      const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `nse_stocks_screener_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    /**
+     * Event Listeners
+     */
+    let searchDebounce = null;
+    DIR_DOM.searchInput.addEventListener('input', e => {
+      clearTimeout(searchDebounce);
+      searchDebounce = setTimeout(() => {
+        DIR_STATE.searchQuery = e.target.value;
+        applyFiltersAndSort();
+      }, 120);
+    });
+
+    DIR_DOM.sortSelect.addEventListener('change', e => {
+      DIR_STATE.sortField = e.target.value;
+      applyFiltersAndSort();
+    });
+
+    DIR_DOM.perPageSelect.addEventListener('change', e => {
+      DIR_STATE.perPage = parseInt(e.target.value, 10);
+      DIR_STATE.currentPage = 1;
+      renderTable();
+    });
+
+    DIR_DOM.filters.addEventListener('click', e => {
+      const pill = e.target.closest('.filter-pill');
+      if (!pill) return;
+      DIR_DOM.filters.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      DIR_STATE.activeFilter = pill.dataset.filter;
+      applyFiltersAndSort();
+    });
+
+    DIR_DOM.exportBtn.addEventListener('click', exportToCsv);
+
+    DIR_DOM.btnFirst.addEventListener('click', () => { DIR_STATE.currentPage = 1; renderTable(); window.scrollTo({ top: 300, behavior: 'smooth' }); });
+    DIR_DOM.btnPrev.addEventListener('click', () => { DIR_STATE.currentPage--; renderTable(); window.scrollTo({ top: 300, behavior: 'smooth' }); });
+    DIR_DOM.btnNext.addEventListener('click', () => { DIR_STATE.currentPage++; renderTable(); window.scrollTo({ top: 300, behavior: 'smooth' }); });
+    DIR_DOM.btnLast.addEventListener('click', () => { DIR_STATE.currentPage = 9999; renderTable(); window.scrollTo({ top: 300, behavior: 'smooth' }); });
+
+    document.addEventListener('DOMContentLoaded', initDirectory);
+  </script>
+</body>
+</html>

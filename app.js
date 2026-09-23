@@ -3,9 +3,13 @@
  * Powers the frontend with TradingView Lightweight Charts and connects to api.php (or client fallback).
  */
 
+const urlParams = new URLSearchParams(window.location.search);
+const initialSymbol = (urlParams.get('symbol') || 'RELIANCE').toUpperCase().replace(/(\.NS|\.BO)$/i, '');
+const initialExchange = (urlParams.get('exchange') || 'NSE').toUpperCase();
+
 const STATE = {
-  symbol: 'RELIANCE',
-  exchange: 'NSE',
+  symbol: initialSymbol,
+  exchange: initialExchange,
   range: '2y',
   chart: null,
   candleSeries: null,
