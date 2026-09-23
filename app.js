@@ -723,6 +723,14 @@ async function loadMasterSymbols() {
       if (res2.ok) list = await res2.json();
     }
 
+    // 3. Edge CDN fallback from GitHub repository
+    if (!list || !list.length) {
+      try {
+        const res3 = await fetch('https://cdn.jsdelivr.net/gh/darashana7/nse-signal-radar@main/stocks_master.json');
+        if (res3.ok) list = await res3.json();
+      } catch (e) {}
+    }
+
     if (list && list.length) {
       STATE.stocksMaster = list;
       try {
@@ -880,8 +888,18 @@ async function loadScannerResults(category = 'all_top') {
 
     // 2. Try static file fallback
     if (!payload || !payload.categories) {
-      const res2 = await fetch('scanner_results.json');
-      if (res2.ok) payload = await res2.json();
+      try {
+        const res2 = await fetch('scanner_results.json');
+        if (res2.ok) payload = await res2.json();
+      } catch (e) {}
+    }
+
+    // 3. Try ultra-fast global edge CDN from GitHub Actions (updated daily at 16:30 IST)
+    if (!payload || !payload.categories) {
+      try {
+        const res3 = await fetch('https://cdn.jsdelivr.net/gh/darashana7/nse-signal-radar@main/scanner_results.json');
+        if (res3.ok) payload = await res3.json();
+      } catch (e) {}
     }
 
     if (!payload || !payload.categories) {
