@@ -11,6 +11,7 @@ Your repository contains everything ready for InfinityFree:
 | File | Destination in InfinityFree | Purpose |
 | :--- | :--- | :--- |
 | `index.html` | `/htdocs/index.html` | Modern responsive dark-mode dashboard UI with TradingView charts |
+| `stocks.html` | `/htdocs/stocks.html` | Dedicated master directory & screener page for all 2,300+ NSE stocks |
 | `styles.css` | `/htdocs/styles.css` | Financial terminal theme, glassmorphism, responsive grid |
 | `app.js` | `/htdocs/app.js` | Chart rendering, indicator calculations, autocomplete & scanner |
 | `api.php` | `/htdocs/api.php` | Backend PHP script: handles on-demand charts, symbols, and scan results |
