@@ -34,6 +34,21 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
       color: var(--text-dim);
     }
+    .badge-bearish {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
+    }
+    .badge-early {
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #fbbf24;
+    }
+    .badge-neutral {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-dim);
+    }
   </style>
 </head>
 <body>
@@ -67,18 +82,23 @@
         <span class="stat-box-num" id="statTotalStocks">2,319</span>
         <span class="stat-box-sub">Active NSE Equities</span>
       </div>
+      <div class="stat-box highlight-cyan">
+        <span class="stat-box-label">Bullish Setups</span>
+        <span class="stat-box-num font-mono" id="statScoredCount" style="color: #00f0ff;">--</span>
+        <span class="stat-box-sub">Active Triggers</span>
+      </div>
       <div class="stat-box highlight-green">
         <span class="stat-box-label">Golden Cross (50/200)</span>
         <span class="stat-box-num font-mono" id="statGoldenCrosses" style="color: var(--color-bullish);">--</span>
         <span class="stat-box-sub">Major Bull Cycles</span>
       </div>
       <div class="stat-box highlight-yellow">
-        <span class="stat-box-label">Momentum Breakouts (20/50)</span>
+        <span class="stat-box-label">Momentum (20/50)</span>
         <span class="stat-box-num font-mono" id="statSwingBreakouts" style="color: var(--color-sma50);">--</span>
         <span class="stat-box-sub">Fresh Swing Triggers</span>
       </div>
       <div class="stat-box highlight-magenta">
-        <span class="stat-box-label">50 SMA Pullback Bounces</span>
+        <span class="stat-box-label">50 SMA Bounces</span>
         <span class="stat-box-num font-mono" id="statPullbackBounces" style="color: var(--color-sma200);">--</span>
         <span class="stat-box-sub">Trend Continuation</span>
       </div>
@@ -105,6 +125,7 @@
             <option value="change_asc">Day % Losers (Low to High)</option>
             <option value="price_desc">Price (High to Low)</option>
             <option value="price_asc">Price (Low to High)</option>
+            <option value="dist200_desc">Distance to 200 SMA (High to Low)</option>
             <option value="symbol_asc">Symbol Name (A to Z)</option>
           </select>
         </div>
@@ -112,9 +133,12 @@
         <div style="display: flex; align-items: center; gap: 6px;">
           <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Show:</span>
           <select id="perPageSelect" class="select-per-page">
-            <option value="25">25 per page</option>
-            <option value="50" selected>50 per page</option>
-            <option value="100">100 per page</option>
+            <option value="50">50 per page</option>
+            <option value="100" selected>100 per page</option>
+            <option value="250">250 per page</option>
+            <option value="500">500 per page</option>
+            <option value="1000">1,000 per page</option>
+            <option value="5000">All 2,300+ Stocks (Single Page)</option>
           </select>
         </div>
 
@@ -126,12 +150,14 @@
 
     <!-- Category Filter Pills -->
     <div class="screener-filters" id="directoryFilters" style="margin-bottom: 16px;">
-      <button class="filter-pill active" data-filter="all">All 2,300+ Stocks</button>
-      <button class="filter-pill" data-filter="scored">🔥 Top Scored Setups (<span id="countScored">0</span>)</button>
+      <button class="filter-pill active" data-filter="all">All 2,300+ Stocks (<span id="countTotal">2,319</span>)</button>
+      <button class="filter-pill" data-filter="scored">🔥 Bullish Setups (<span id="countScored">0</span>)</button>
       <button class="filter-pill" data-filter="golden_crosses">✨ Golden Cross (50/200)</button>
       <button class="filter-pill" data-filter="swing_breakouts">🚀 Momentum Breakout (20/50)</button>
       <button class="filter-pill" data-filter="pullback_bounces">🎯 50 SMA Pullback Bounces</button>
       <button class="filter-pill" data-filter="power_trends">⚡ Power Bull Alignment</button>
+      <button class="filter-pill" data-filter="above_200">🟢 Above 200 SMA</button>
+      <button class="filter-pill" data-filter="below_200">🔴 Below 200 SMA</button>
       <button class="filter-pill" data-filter="tier_a">Tier A+ Only</button>
     </div>
 
@@ -194,7 +220,7 @@
       allMerged: [],
       filtered: [],
       currentPage: 1,
-      perPage: 50,
+      perPage: 100,
       activeFilter: 'all',
       searchQuery: '',
       sortField: 'score_desc'
@@ -214,9 +240,11 @@
       btnNext: document.getElementById('btnNextPage'),
       btnLast: document.getElementById('btnLastPage'),
       statTotal: document.getElementById('statTotalStocks'),
+      statScored: document.getElementById('statScoredCount'),
       statGolden: document.getElementById('statGoldenCrosses'),
       statSwing: document.getElementById('statSwingBreakouts'),
       statPullback: document.getElementById('statPullbackBounces'),
+      countTotal: document.getElementById('countTotal'),
       countScored: document.getElementById('countScored'),
       headerStatus: document.getElementById('headerStatusText')
     };
@@ -315,25 +343,40 @@
       DIR_STATE.masterStocks = masterList;
       DIR_STATE.scoredMap = {};
 
-      // Build scored map
       const cats = (scoredData && scoredData.categories) ? scoredData.categories : {};
       const allScored = cats.all_top || [];
+
+      // 1. First populate all analyzed stocks from all_stocks if available
+      if (scoredData && Array.isArray(scoredData.all_stocks)) {
+        scoredData.all_stocks.forEach(item => {
+          if (item && item.symbol) {
+            DIR_STATE.scoredMap[item.symbol] = item;
+          }
+        });
+      }
+
+      // 2. Ensure all scored setups in all_top are mapped
       allScored.forEach(item => {
-        DIR_STATE.scoredMap[item.symbol] = item;
+        if (item && item.symbol) {
+          DIR_STATE.scoredMap[item.symbol] = item;
+        }
       });
 
       // Update stat cards
       const goldenCount = (cats.golden_crosses || []).length;
       const swingCount = (cats.swing_breakouts || []).length;
       const pullbackCount = (cats.pullback_bounces || []).length;
+      const totalUniverse = (scoredData && scoredData.totalScanned) ? scoredData.totalScanned : masterList.length;
 
-      DIR_DOM.statTotal.textContent = masterList.length.toLocaleString();
-      DIR_DOM.statGolden.textContent = goldenCount;
-      DIR_DOM.statSwing.textContent = swingCount;
-      DIR_DOM.statPullback.textContent = pullbackCount;
-      DIR_DOM.countScored.textContent = allScored.length;
+      if (DIR_DOM.statTotal) DIR_DOM.statTotal.textContent = totalUniverse.toLocaleString();
+      if (DIR_DOM.countTotal) DIR_DOM.countTotal.textContent = totalUniverse.toLocaleString();
+      if (DIR_DOM.statScored) DIR_DOM.statScored.textContent = allScored.length;
+      if (DIR_DOM.statGolden) DIR_DOM.statGolden.textContent = goldenCount;
+      if (DIR_DOM.statSwing) DIR_DOM.statSwing.textContent = swingCount;
+      if (DIR_DOM.statPullback) DIR_DOM.statPullback.textContent = pullbackCount;
+      if (DIR_DOM.countScored) DIR_DOM.countScored.textContent = allScored.length;
 
-      if (scoredData && scoredData.generatedAt) {
+      if (scoredData && scoredData.generatedAt && DIR_DOM.headerStatus) {
         DIR_DOM.headerStatus.textContent = `Scanned ${scoredData.generatedAt.slice(0, 16)}`;
       }
 
@@ -343,7 +386,8 @@
         if (scored) {
           return {
             ...scored,
-            isScored: true
+            name: scored.name || stock.n,
+            isScored: (scored.score > 0)
           };
         }
         return {
@@ -386,24 +430,29 @@
         list = list.filter(x => x.setupType === 'PULLBACK_BOUNCE');
       } else if (filter === 'power_trends') {
         list = list.filter(x => x.setupType === 'POWER_TREND');
+      } else if (filter === 'above_200') {
+        list = list.filter(x => x.price && x.sma200 && x.price > x.sma200);
+      } else if (filter === 'below_200') {
+        list = list.filter(x => x.price && x.sma200 && x.price < x.sma200);
       } else if (filter === 'tier_a') {
-        list = list.filter(x => x.tier === 'A+');
+        list = list.filter(x => x.tier === 'A+' || x.tier === 'A');
       }
 
       // 2. Search Query Filter
       if (q) {
-        list = list.filter(x => x.symbol.includes(q) || (x.name && x.name.toUpperCase().includes(q)));
+        list = list.filter(x => (x.symbol && x.symbol.includes(q)) || (x.name && x.name.toUpperCase().includes(q)));
       }
 
       // 3. Sorting
       const sort = DIR_STATE.sortField;
       list.sort((a, b) => {
         if (sort === 'score_desc') return (b.score || 0) - (a.score || 0);
-        if (sort === 'change_desc') return (b.changePercent || -999) - (a.changePercent || -999);
-        if (sort === 'change_asc') return (a.changePercent || 999) - (b.changePercent || 999);
-        if (sort === 'price_desc') return (b.price || 0) - (a.price || 0);
-        if (sort === 'price_asc') return (a.price || 0) - (b.price || 0);
-        if (sort === 'symbol_asc') return a.symbol.localeCompare(b.symbol);
+        if (sort === 'change_desc') return (Number(b.changePercent) || -999) - (Number(a.changePercent) || -999);
+        if (sort === 'change_asc') return (Number(a.changePercent) || 999) - (Number(b.changePercent) || 999);
+        if (sort === 'price_desc') return (Number(b.price) || 0) - (Number(a.price) || 0);
+        if (sort === 'price_asc') return (Number(a.price) || 0) - (Number(b.price) || 0);
+        if (sort === 'dist200_desc') return (Number(b.dist200Pct) || -999) - (Number(a.dist200Pct) || -999);
+        if (sort === 'symbol_asc') return (a.symbol || '').localeCompare(b.symbol || '');
         return 0;
       });
 
@@ -450,14 +499,28 @@
         else if (item.tier === 'B') scoreBadgeClass = 'tier-b';
 
         let badgeTypeClass = 'badge-signal-entry';
-        if (item.setupType === 'NEUTRAL') badgeTypeClass = 'tier-neutral';
+        if (item.setupType === 'BELOW_200_SMA' || item.setupType === 'BEARISH_ALIGNMENT') {
+          badgeTypeClass = 'badge-bearish';
+        } else if (item.setupType === 'EARLY_ACCUMULATION') {
+          badgeTypeClass = 'badge-early';
+        } else if (item.setupType === 'NEUTRAL') {
+          badgeTypeClass = 'badge-neutral';
+        }
 
-        const dayChangeFormatted = item.changePercent !== null 
-          ? `<span class="${item.changePercent >= 0 ? 'val-positive' : 'val-negative'}">${item.changePercent >= 0 ? '+' : ''}${item.changePercent}%</span>`
+        const priceFormatted = (item.price !== null && item.price !== undefined)
+          ? '₹' + Number(item.price).toFixed(2)
           : '<span class="text-muted">-</span>';
 
-        const dist200Formatted = item.dist200Pct !== null
-          ? `<span class="${item.dist200Pct >= 0 ? 'val-positive' : 'val-negative'}">${item.dist200Pct >= 0 ? '+' : ''}${item.dist200Pct}%</span>`
+        const dayChangeFormatted = (item.changePercent !== null && item.changePercent !== undefined)
+          ? `<span class="${Number(item.changePercent) >= 0 ? 'val-positive' : 'val-negative'}">${Number(item.changePercent) >= 0 ? '+' : ''}${Number(item.changePercent).toFixed(2)}%</span>`
+          : '<span class="text-muted">-</span>';
+
+        const sma20Formatted = item.sma20 ? '₹' + Number(item.sma20).toFixed(2) : '-';
+        const sma50Formatted = item.sma50 ? '₹' + Number(item.sma50).toFixed(2) : '-';
+        const sma200Formatted = item.sma200 ? '₹' + Number(item.sma200).toFixed(2) : '-';
+
+        const dist200Formatted = (item.dist200Pct !== null && item.dist200Pct !== undefined)
+          ? `<span class="${Number(item.dist200Pct) >= 0 ? 'val-positive' : 'val-negative'}">${Number(item.dist200Pct) >= 0 ? '+' : ''}${Number(item.dist200Pct).toFixed(1)}%</span>`
           : '<span class="text-muted">-</span>';
 
         return `
@@ -481,17 +544,15 @@
               ` : `<span class="badge-score tier-neutral">--</span>`}
             </td>
             <td>
-              <span class="${badgeTypeClass}" style="font-size: 0.72rem; padding: 3px 8px;">
+              <span class="${badgeTypeClass}">
                 ${item.badgeLabel || 'Neutral'}
               </span>
             </td>
-            <td class="font-mono" style="font-weight: 600;">
-              ${item.price ? '₹' + item.price.toLocaleString('en-IN') : '<span class="text-muted">-</span>'}
-            </td>
+            <td class="font-mono" style="font-weight: 600;">${priceFormatted}</td>
             <td class="font-mono">${dayChangeFormatted}</td>
-            <td class="font-mono" style="color: var(--color-sma20);">${item.sma20 ? '₹' + item.sma20 : '-'}</td>
-            <td class="font-mono" style="color: var(--color-sma50);">${item.sma50 ? '₹' + item.sma50 : '-'}</td>
-            <td class="font-mono" style="color: var(--color-sma200);">${item.sma200 ? '₹' + item.sma200 : '-'}</td>
+            <td class="font-mono" style="color: var(--color-sma20);">${sma20Formatted}</td>
+            <td class="font-mono" style="color: var(--color-sma50);">${sma50Formatted}</td>
+            <td class="font-mono" style="color: var(--color-sma200);">${sma200Formatted}</td>
             <td class="font-mono">${dist200Formatted}</td>
             <td style="text-align: right;">
               <a href="index.html?symbol=${encodeURIComponent(item.symbol)}" class="btn-view-stock" style="text-decoration: none; display: inline-block;">
